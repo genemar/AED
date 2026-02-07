@@ -1,0 +1,41 @@
+@model List<AEDFinder.Web.Models.ViewModels.DayAvailabilityInput>
+
+<div class="card mt-3" data-component="availability-editor">
+    <div class="card-header">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="limitAvailabilityToggle" name="LimitAvailability" value="true" @(ViewData["LimitAvailability"] is true ? "checked" : null) />
+            <label class="form-check-label" for="limitAvailabilityToggle">
+                Toon deze AED alleen binnen specifieke tijden
+            </label>
+        </div>
+    </div>
+    <div class="card-body availability-grid @(ViewData["LimitAvailability"] is true ? "" : "disabled")">
+        <div class="row fw-semibold mb-2">
+            <div class="col-4 col-md-3">Dag</div>
+            <div class="col-4 col-md-3">Open</div>
+            <div class="col-4 col-md-3">Vanaf</div>
+            <div class="d-none d-md-block col-md-3">Tot</div>
+        </div>
+        @for (var i = 0; i < Model.Count; i++)
+        {
+            <div class="row align-items-center availability-row">
+                <input type="hidden" name="Availability[@i].Day" value="@((int)Model[i].Day)" />
+                <div class="col-4 col-md-3">
+                    <label class="mb-0">@Model[i].Day</label>
+                </div>
+                <div class="col-4 col-md-3">
+                    <input class="form-check-input" type="checkbox" name="Availability[@i].IsOpen" value="true" @(Model[i].IsOpen ? "checked" : null) />
+                </div>
+                <div class="col-4 col-md-3">
+                    <input class="form-control" type="time" name="Availability[@i].StartTime" value="@(Model[i].StartTime?.ToString(@"hh\:mm"))" />
+                </div>
+                <div class="col-12 col-md-3 mt-2 mt-md-0">
+                    <input class="form-control" type="time" name="Availability[@i].EndTime" value="@(Model[i].EndTime?.ToString(@"hh\:mm"))" />
+                </div>
+            </div>
+        }
+    </div>
+    <div class="card-footer text-muted">
+        Laat leeg om de AED 24/7 zichtbaar te maken.
+    </div>
+</div>

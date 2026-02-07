@@ -1,0 +1,12 @@
+<!-- Simplified VGZ-inspired logo. Replace with the official asset for production deployments. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="VGZ">
+  <defs>
+    <radialGradient id="vgzGradient" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#00C0A3" />
+      <stop offset="55%" stop-color="#00AF86" />
+      <stop offset="100%" stop-color="#00A56A" />
+    </radialGradient>
+  </defs>
+  <circle cx="60" cy="60" r="52" fill="url(#vgzGradient)" />
+  <text x="60" y="72" text-anchor="middle" font-family="Trebuchet MS, Arial, sans-serif" font-weight="700" font-size="44" fill="#FFFFFF">vgz</text>
+</svg>

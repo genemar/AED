@@ -1,0 +1,260 @@
+@using System.Globalization
+@model AEDFinder.Web.Models.ViewModels.AedFormViewModel
+@{
+    ViewData["Title"] = "AED bewerken";
+    ViewData["LimitAvailability"] = Model.LimitAvailability;
+    var mapTileUrl = ViewBag.MapTileUrl as string ?? "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+    var mapAttribution = ViewBag.MapAttribution as string ?? "&copy; OpenStreetMap contributors";
+    var mapDefaultLat = ViewBag.MapDefaultLat is double defaultLat ? defaultLat : 52.1326;
+    var mapDefaultLng = ViewBag.MapDefaultLng is double defaultLng ? defaultLng : 5.2913;
+    var mapDefaultZoom = ViewBag.MapDefaultZoom is int zoom ? zoom : 7;
+    var mapSelectedLat = ViewBag.MapSelectedLat is double selectedLat ? selectedLat : (double?)null;
+    var mapSelectedLng = ViewBag.MapSelectedLng is double selectedLng ? selectedLng : (double?)null;
+}
+
+<h1 class="mb-3">AED bewerken</h1>
+<p class="text-muted">Werk de gegevens bij zodat deze actueel blijven.</p>
+
+<form asp-action="Edit" method="post" class="row g-3">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="col-md-6">
+        <label asp-for="DisplayName" class="form-label"></label>
+        <input asp-for="DisplayName" class="form-control" />
+        <span asp-validation-for="DisplayName" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="DeviceType" class="form-label"></label>
+        <input asp-for="DeviceType" class="form-control" />
+        <span asp-validation-for="DeviceType" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-8">
+        <label asp-for="Street" class="form-label"></label>
+        <input asp-for="Street" class="form-control" />
+        <span asp-validation-for="Street" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="HouseNumber" class="form-label"></label>
+        <input asp-for="HouseNumber" class="form-control" />
+        <span asp-validation-for="HouseNumber" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="PostalCode" class="form-label"></label>
+        <input asp-for="PostalCode" class="form-control" />
+        <span asp-validation-for="PostalCode" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="City" class="form-label"></label>
+        <input asp-for="City" class="form-control" />
+        <span asp-validation-for="City" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="LocationDetail" class="form-label"></label>
+        <input asp-for="LocationDetail" class="form-control" />
+        <span asp-validation-for="LocationDetail" class="text-danger"></span>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2 class="h5 mb-0">Kaartlocatie</h2>
+                <button type="button" class="btn btn-outline-success btn-sm" id="use-current-location">Gebruik mijn locatie</button>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Klik op de kaart om de exacte positie van de AED vast te leggen. De coördinaten worden automatisch bijgewerkt.</p>
+                <div id="aed-location-map"
+                     data-tile="@mapTileUrl"
+                     data-attribution="@Html.Raw(mapAttribution)"
+                     data-default-lat="@mapDefaultLat.ToString(CultureInfo.InvariantCulture)"
+                     data-default-lng="@mapDefaultLng.ToString(CultureInfo.InvariantCulture)"
+                     data-default-zoom="@mapDefaultZoom"
+                     data-selected-lat="@(mapSelectedLat?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)"
+                     data-selected-lng="@(mapSelectedLng?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Latitude" class="form-label"></label>
+        <input asp-for="Latitude" class="form-control" type="number" step="0.000001" />
+        <span asp-validation-for="Latitude" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Longitude" class="form-label"></label>
+        <input asp-for="Longitude" class="form-control" type="number" step="0.000001" />
+        <span asp-validation-for="Longitude" class="text-danger"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="ContactNumber" class="form-label"></label>
+        <input asp-for="ContactNumber" class="form-control" />
+        <span asp-validation-for="ContactNumber" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="ExpirationDate" class="form-label"></label>
+        <input asp-for="ExpirationDate" class="form-control" />
+        <span asp-validation-for="ExpirationDate" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="IsActive" class="form-label"></label>
+        <div class="form-check">
+            <input asp-for="IsActive" class="form-check-input" />
+            <label class="form-check-label" asp-for="IsActive">Toon op kaart</label>
+        </div>
+        <span asp-validation-for="IsActive" class="text-danger"></span>
+    </div>
+
+    <div class="col-12">
+        <label asp-for="AccessInstructions" class="form-label"></label>
+        <textarea asp-for="AccessInstructions" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="AccessInstructions" class="text-danger"></span>
+    </div>
+
+    <div class="col-12">
+        <label asp-for="LastMinuteInstructions" class="form-label"></label>
+        <textarea asp-for="LastMinuteInstructions" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="LastMinuteInstructions" class="text-danger"></span>
+    </div>
+
+    <div class="col-12">
+        @await Html.PartialAsync("_AvailabilityEditor", Model.Availability)
+    </div>
+
+    <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Opslaan</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Annuleren</a>
+    </div>
+</form>
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4QrlgIC1L1tGXMfi3mXq4GAKNElB7kR0qX1A/q7uW0=" crossorigin="" />
+    <style>
+        #aed-location-map {
+            height: 360px;
+            border-radius: 0.5rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kGStb8fWcJ7tGunK5/7bBe1mJSC0ayS+4pSAw=" crossorigin=""></script>
+    <script>
+        (function () {
+            const container = document.querySelector('[data-component="availability-editor"]');
+            if (!container) {
+                return;
+            }
+            const toggle = container.querySelector('#limitAvailabilityToggle');
+            const grid = container.querySelector('.availability-grid');
+            if (!toggle || !grid) {
+                return;
+            }
+
+            function syncState() {
+                const enabled = toggle.checked;
+                grid.classList.toggle('disabled', !enabled);
+                const inputs = grid.querySelectorAll('input');
+                inputs.forEach(input => {
+                    if (input.type === 'hidden') {
+                        return;
+                    }
+                    input.disabled = !enabled;
+                });
+            }
+
+            toggle.addEventListener('change', syncState);
+            syncState();
+        })();
+
+        (function () {
+            const mapElement = document.getElementById('aed-location-map');
+            if (!mapElement) {
+                return;
+            }
+
+            const latInput = document.getElementById('Latitude');
+            const lngInput = document.getElementById('Longitude');
+            if (!latInput || !lngInput) {
+                return;
+            }
+
+            const tileUrl = mapElement.dataset.tile;
+            const attribution = mapElement.dataset.attribution;
+            const defaultLat = Number(mapElement.dataset.defaultLat || '52.1326');
+            const defaultLng = Number(mapElement.dataset.defaultLng || '5.2913');
+            const defaultZoom = Number(mapElement.dataset.defaultZoom || '7');
+            const selectedLat = mapElement.dataset.selectedLat ? Number(mapElement.dataset.selectedLat) : null;
+            const selectedLng = mapElement.dataset.selectedLng ? Number(mapElement.dataset.selectedLng) : null;
+
+            const map = L.map(mapElement).setView([selectedLat ?? defaultLat, selectedLng ?? defaultLng], selectedLat !== null && selectedLng !== null ? 15 : defaultZoom);
+            L.tileLayer(tileUrl, { attribution }).addTo(map);
+
+            let marker = null;
+
+            function setMarker(lat, lng, adjustView) {
+                if (Number.isNaN(lat) || Number.isNaN(lng)) {
+                    return;
+                }
+                if (marker) {
+                    marker.setLatLng([lat, lng]);
+                } else {
+                    marker = L.marker([lat, lng]).addTo(map);
+                }
+                if (adjustView) {
+                    map.setView([lat, lng], 16);
+                }
+            }
+
+            if (selectedLat !== null && selectedLng !== null) {
+                setMarker(selectedLat, selectedLng, false);
+            }
+
+            function updateInputs(lat, lng) {
+                latInput.value = lat.toFixed(6);
+                lngInput.value = lng.toFixed(6);
+            }
+
+            map.on('click', function (event) {
+                const { lat, lng } = event.latlng;
+                updateInputs(lat, lng);
+                setMarker(lat, lng, false);
+            });
+
+            function syncFromInputs(adjustView) {
+                const lat = Number(latInput.value);
+                const lng = Number(lngInput.value);
+                if (Number.isNaN(lat) || Number.isNaN(lng)) {
+                    return;
+                }
+                setMarker(lat, lng, adjustView);
+            }
+
+            latInput.addEventListener('change', function () { syncFromInputs(true); });
+            lngInput.addEventListener('change', function () { syncFromInputs(true); });
+
+            const locateButton = document.getElementById('use-current-location');
+            if (locateButton && navigator.geolocation) {
+                locateButton.addEventListener('click', function () {
+                    locateButton.disabled = true;
+                    locateButton.textContent = 'Locatie ophalen...';
+                    navigator.geolocation.getCurrentPosition(function (position) {
+                        const { latitude, longitude } = position.coords;
+                        updateInputs(latitude, longitude);
+                        setMarker(latitude, longitude, true);
+                        locateButton.textContent = 'Gebruik mijn locatie';
+                        locateButton.disabled = false;
+                    }, function () {
+                        locateButton.textContent = 'Gebruik mijn locatie';
+                        locateButton.disabled = false;
+                        alert('Locatie kan niet worden bepaald. Vul handmatig de coördinaten in.');
+                    }, { enableHighAccuracy: true, timeout: 10000 });
+                });
+            }
+        })();
+    </script>
+}

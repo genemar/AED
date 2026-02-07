@@ -1,0 +1,72 @@
+@model IReadOnlyList<AEDFinder.Web.Models.Aed>
+@{
+    ViewData["Title"] = "Mijn AEDs";
+}
+
+<section class="page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h1 class="mb-1">Mijn geregistreerde AEDs</h1>
+            <p class="text-muted mb-0">Beheer locaties, beschikbaarheid en instructies voor jouw AEDs.</p>
+        </div>
+        <a class="btn btn-success" asp-action="Create">Nieuwe AED registreren</a>
+    </div>
+</section>
+
+@if (TempData["StatusMessage"] is string statusMessage)
+{
+    <div class="alert alert-success" role="status">@statusMessage</div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info mt-3">
+        <strong>Geen AEDs gevonden.</strong> Voeg je eerste AED toe zodat hulpverleners deze kunnen vinden in noodsituaties.
+    </div>
+}
+else
+{
+    <div class="table-responsive mt-3">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Naam</th>
+                    <th>Adres</th>
+                    <th>Beschikbaar</th>
+                    <th class="text-end">Acties</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var aed in Model)
+            {
+                <tr>
+                    <td>
+                        <strong>@(string.IsNullOrWhiteSpace(aed.DisplayName) ? "AED locatie" : aed.DisplayName)</strong><br />
+                        <small class="text-muted">@aed.DeviceType</small>
+                    </td>
+                    <td>
+                        @aed.Street @aed.HouseNumber<br />
+                        <small class="text-muted">@aed.PostalCode @aed.City</small>
+                    </td>
+                    <td>
+                        @if (aed.IsActive)
+                        {
+                            <span class="badge text-bg-success">Zichtbaar</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Verborgen</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group" role="group">
+                            <a class="btn btn-outline-primary btn-sm" asp-action="Edit" asp-route-id="@aed.Id">Bewerken</a>
+                            <a class="btn btn-outline-danger btn-sm" asp-action="Delete" asp-route-id="@aed.Id">Verwijderen</a>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

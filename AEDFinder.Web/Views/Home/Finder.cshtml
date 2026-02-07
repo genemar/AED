@@ -1,0 +1,531 @@
+@using System.Linq
+@model AEDFinder.Web.Models.ViewModels.HomeViewModel
+@{
+    ViewData["Title"] = "Zoek een AED";
+    var theme = Model.Theme;
+    var map = Model.Map;
+}
+
+@section HeaderActions {
+    <div class="finder-header-actions">
+        <button class="btn primary" id="use-location" type="button">Gebruik mijn locatie</button>
+        <button class="btn secondary" id="toggle-list" type="button" aria-expanded="true" aria-controls="fallback-list">Verberg lijst</button>
+    </div>
+}
+
+<div class="finder-page">
+<section class="finder-map" aria-label="Kaart met AED locaties">
+    <div class="finder-map__canvas-wrapper">
+        <div class="finder-map__canvas" id="aed-map"
+             data-tile="@map.TileUrl"
+             data-attribution="@Html.Raw(map.Attribution)"
+             data-default-lat="@map.DefaultLatitude.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+             data-default-lng="@map.DefaultLongitude.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+             data-default-zoom="@map.DefaultZoom">
+        </div>
+        <div class="finder-map__overlay" aria-live="polite">
+            <article class="finder-hero" style="background:linear-gradient(135deg, @theme.PrimaryColor 0%, @theme.AccentColor 100%);">
+                <div class="finder-hero__content">
+                    <div>
+                        <h1>Vind direct een AED in de buurt</h1>
+                        <p>Sta je in een noodsituatie? Deel je locatie en ontvang de dichtstbijzijnde beschikbare AED met instructies hoe je deze kunt pakken.</p>
+                    </div>
+                    <div class="finder-status" id="finder-status">Sta toe dat de browser je locatie gebruikt om snel te starten.</div>
+                </div>
+            </article>
+        </div>
+    </div>
+    <aside class="aed-results" id="fallback-list" aria-live="polite">
+        <header class="aed-results__header">
+            <h2>Beschikbare AEDs</h2>
+        </header>
+        <ul id="aed-list" class="aed-list">
+            @if (Model.Featured.Any())
+            {
+                foreach (var item in Model.Featured)
+                {
+                    <li class="aed-card">
+                        <h3>@item.Title</h3>
+                        <p class="aed-address">@item.Address</p>
+                        @if (!string.IsNullOrWhiteSpace(item.ContactNumber))
+                        {
+                            <p class="aed-contact">Bel: <a href="tel:@item.ContactNumber">@item.ContactNumber</a></p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(item.AccessInstructions))
+                        {
+                            <p class="aed-access"><strong>Toegang:</strong> @item.AccessInstructions</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(item.LastMinuteInstructions))
+                        {
+                            <p class="aed-notes"><strong>Laatste instructies:</strong> @item.LastMinuteInstructions</p>
+                        }
+                        @if (item.Latitude.HasValue && item.Longitude.HasValue)
+                        {
+                            var navUrl = $"https://www.google.com/maps/dir/?api=1&destination={item.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)},{item.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+                            <p class="aed-navigation"><a class="aed-nav" href="@navUrl" target="_blank" rel="noopener">Open route in Google Maps</a></p>
+                        }
+                    </li>
+                }
+            }
+            else
+            {
+                <li class="aed-card">Geen AEDs beschikbaar. Voeg locaties toe via het portaal of probeer later opnieuw.</li>
+            }
+        </ul>
+    </aside>
+</section>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        .finder-page {
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            width: 100vw;
+            max-width: 100vw;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .finder-header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .finder-header-actions .btn {
+            padding: 0.55rem 1.2rem;
+            font-size: 0.95rem;
+            border-radius: 999px;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
+
+        .btn.primary {
+            background-color: var(--theme-accent);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(0, 192, 163, 0.28);
+        }
+
+        .btn.primary:hover,
+        .btn.secondary:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn.secondary {
+            background-color: rgba(255, 255, 255, 0.22);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.55);
+        }
+
+        .finder-map {
+            display: flex;
+            height: calc(100vh - 72px);
+            min-height: 560px;
+            position: relative;
+        }
+
+        .finder-map__canvas-wrapper {
+            position: relative;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .finder-map__canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .finder-map__overlay {
+            position: absolute;
+            top: 1.75rem;
+            left: 1.75rem;
+            max-width: min(420px, 42vw);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .finder-hero {
+            color: #fff;
+            padding: clamp(1.5rem, 3vw, 2.25rem);
+            border-radius: 1.25rem;
+            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            backdrop-filter: blur(8px);
+            pointer-events: auto;
+        }
+
+        .finder-hero__content {
+            display: flex;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .finder-hero h1 {
+            margin: 0;
+            font-size: clamp(2rem, 4vw, 3rem);
+        }
+
+        .finder-hero p {
+            margin: 0;
+            font-size: clamp(1rem, 1.5vw, 1.1rem);
+            line-height: 1.45;
+            max-width: 26rem;
+        }
+
+        .finder-status {
+            background-color: rgba(0, 0, 0, 0.28);
+            padding: clamp(0.85rem, 2vw, 1.25rem);
+            border-radius: 0.9rem;
+            max-width: 24rem;
+            line-height: 1.45;
+        }
+
+        .leaflet-container {
+            font: inherit;
+        }
+
+        .aed-results {
+            width: min(320px, 28vw);
+            flex: 0 0 auto;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .aed-results__header {
+            position: sticky;
+            top: 0;
+            background: inherit;
+            z-index: 2;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .aed-results h2 {
+            margin: 0;
+            font-size: 1.15rem;
+            color: var(--theme-primary);
+        }
+
+        .aed-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            flex: 1 1 auto;
+        }
+
+        .aed-card {
+            border-radius: 0.9rem;
+            padding: 1rem;
+            background: #fff;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            border-left: 4px solid var(--theme-primary);
+        }
+
+        .aed-card h3 {
+            margin: 0 0 0.35rem 0;
+        }
+
+        .aed-address {
+            color: #505050;
+        }
+
+        .aed-contact a {
+            color: var(--theme-primary);
+            font-weight: 600;
+        }
+
+        .aed-nav {
+            color: var(--theme-accent);
+            font-weight: 600;
+        }
+
+        .aed-navigation {
+            margin-top: auto;
+        }
+
+        #toggle-list {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        @@media (max-width: 1400px) {
+            .finder-map__overlay {
+                left: 1.25rem;
+                top: 1.25rem;
+                max-width: min(380px, 50vw);
+            }
+
+            .aed-results {
+                width: min(300px, 34vw);
+            }
+        }
+
+        @@media (max-width: 992px) {
+            .finder-map {
+                flex-direction: column;
+                height: calc(100vh - 64px);
+            }
+
+            .finder-map__overlay {
+                position: static;
+                max-width: none;
+                padding: 1.25rem 1rem 0 1rem;
+            }
+
+            .finder-hero {
+                border-radius: 0;
+                box-shadow: none;
+                border: none;
+                backdrop-filter: none;
+            }
+
+            .finder-hero__content {
+                gap: 1rem;
+            }
+
+            .finder-status {
+                max-width: none;
+            }
+
+            .aed-results {
+                position: absolute;
+                inset: auto 0 0 0;
+                width: 100%;
+                max-height: 45vh;
+                border-left: none;
+                border-top: 1px solid rgba(0, 0, 0, 0.08);
+                box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
+                transform: translateY(0);
+                transition: transform 0.25s ease;
+            }
+
+            .aed-results[data-collapsed="true"] {
+                transform: translateY(calc(100% - 3.5rem));
+            }
+        }
+
+        @@media (max-width: 600px) {
+            .finder-header-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .finder-map {
+                height: calc(100vh - 56px);
+            }
+
+            .finder-map__overlay {
+                padding: 0.5rem;
+            }
+
+            .finder-hero {
+                padding: 1.25rem;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        (function () {
+            const mapElement = document.getElementById('aed-map');
+            if (!mapElement) {
+                return;
+            }
+
+            const tileUrl = mapElement.dataset.tile;
+            const attribution = mapElement.dataset.attribution;
+            const defaultLat = Number(mapElement.dataset.defaultLat ?? '52.1326');
+            const defaultLng = Number(mapElement.dataset.defaultLng ?? '5.2913');
+            const defaultZoom = Number(mapElement.dataset.defaultZoom ?? '7');
+
+            const statusElement = document.getElementById('finder-status');
+            const listElement = document.getElementById('aed-list');
+            const listContainer = document.getElementById('fallback-list');
+            const toggleListButton = document.getElementById('toggle-list');
+            const markersLayer = L.layerGroup();
+
+            const map = L.map(mapElement).setView([defaultLat, defaultLng], defaultZoom);
+            L.tileLayer(tileUrl, { attribution }).addTo(map);
+            markersLayer.addTo(map);
+
+            const useLocationButton = document.getElementById('use-location');
+
+            if (toggleListButton && listContainer) {
+                toggleListButton.addEventListener('click', () => {
+                    const collapsed = listContainer.dataset.collapsed === 'true';
+                    const nextCollapsed = !collapsed;
+                    listContainer.dataset.collapsed = nextCollapsed ? 'true' : 'false';
+                    toggleListButton.textContent = nextCollapsed ? 'Toon lijst' : 'Verberg lijst';
+                    toggleListButton.setAttribute('aria-expanded', (!nextCollapsed).toString());
+                });
+            }
+
+            function setStatus(message, isError) {
+                if (!statusElement) {
+                    return;
+                }
+                statusElement.textContent = message;
+                statusElement.style.backgroundColor = isError ? 'rgba(255,0,0,0.2)' : 'rgba(0,0,0,0.2)';
+            }
+
+            function renderList(items) {
+                if (!listElement) {
+                    return;
+                }
+                listElement.innerHTML = '';
+                if (!items.length) {
+                    listElement.innerHTML = '<li class="aed-card">Geen beschikbare AEDs gevonden op dit moment.</li>';
+                    return;
+                }
+
+                for (const item of items) {
+                    const card = document.createElement('li');
+                    card.className = 'aed-card';
+                    const hasCoordinates = typeof item.latitude === 'number' && typeof item.longitude === 'number' && !Number.isNaN(item.latitude) && !Number.isNaN(item.longitude);
+                    const navigationLink = hasCoordinates
+                        ? `<p class="aed-navigation"><a class="aed-nav" href="https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}" target="_blank" rel="noopener">Open route in Google Maps</a></p>`
+                        : '';
+
+                    card.innerHTML = `
+                        <h3>${item.displayName}</h3>
+                        <p class="aed-address">${item.street} ${item.houseNumber}, ${item.postalCode} ${item.city}</p>
+                        ${item.distanceText ? `<p><strong>Afstand:</strong> ${item.distanceText}</p>` : ''}
+                        ${item.contactNumber ? `<p class="aed-contact">Bel: <a href="tel:${item.contactNumber}">${item.contactNumber}</a></p>` : ''}
+                        ${item.accessInstructions ? `<p class="aed-access"><strong>Toegang:</strong> ${item.accessInstructions}</p>` : ''}
+                        ${item.lastMinuteInstructions ? `<p class="aed-notes"><strong>Laatste instructies:</strong> ${item.lastMinuteInstructions}</p>` : ''}
+                        ${navigationLink}
+                    `;
+                    listElement.appendChild(card);
+                }
+            }
+
+            function renderMarkers(items) {
+                markersLayer.clearLayers();
+                if (!items.length) {
+                    return;
+                }
+
+                const markerBounds = [];
+
+                for (const item of items) {
+                    if (typeof item.latitude !== 'number' || typeof item.longitude !== 'number') {
+                        continue;
+                    }
+
+                    const marker = L.marker([item.latitude, item.longitude]);
+                    const navigationUrl = `https://www.google.com/maps/dir/?api=1&destination=${item.latitude},${item.longitude}`;
+                    marker.bindPopup(`
+                        <strong>${item.displayName}</strong><br />
+                        ${item.street} ${item.houseNumber}<br />
+                        ${item.postalCode} ${item.city}<br />
+                        ${item.contactNumber ? `Bel: <a href="tel:${item.contactNumber}">${item.contactNumber}</a><br />` : ''}
+                        ${item.accessInstructions ? `<em>Toegang: ${item.accessInstructions}</em><br />` : ''}
+                        <a class="aed-nav" href="${navigationUrl}" target="_blank" rel="noopener">Open route in Google Maps</a>
+                    `);
+                    marker.addTo(markersLayer);
+                    markerBounds.push([item.latitude, item.longitude]);
+                }
+
+                if (markerBounds.length) {
+                    map.fitBounds(markerBounds, { padding: [32, 32] });
+                }
+            }
+
+            async function loadAeds(lat, lng) {
+                try {
+                    setStatus('Zoeken naar beschikbare AEDs...', false);
+                    const params = new URLSearchParams();
+                    if (typeof lat === 'number' && typeof lng === 'number') {
+                        params.set('lat', lat.toString());
+                        params.set('lng', lng.toString());
+                    }
+
+                    const response = await fetch(`/api/aeds?${params.toString()}`);
+                    if (!response.ok) {
+                        throw new Error('Kan AED data niet ophalen');
+                    }
+
+                    const data = await response.json();
+                    renderList(data);
+                    renderMarkers(data);
+                    setStatus('Resultaten bijgewerkt. Kies een AED en start de navigatie.', false);
+                } catch (error) {
+                    console.error(error);
+                    setStatus('Kan geen AEDs ophalen. Probeer het later opnieuw.', true);
+                }
+            }
+
+            if (useLocationButton) {
+                useLocationButton.addEventListener('click', () => {
+                    if (!navigator.geolocation) {
+                        setStatus('Locatie delen wordt niet ondersteund in deze browser.', true);
+                        return;
+                    }
+
+                    setStatus('Locatie wordt bepaald...', false);
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const { latitude, longitude } = position.coords;
+                            map.setView([latitude, longitude], 15);
+                            L.circleMarker([latitude, longitude], { radius: 10, color: '#2e7d32' }).addTo(map);
+                            loadAeds(latitude, longitude);
+                        },
+                        (error) => {
+                            console.warn('Geolocatie mislukt', error);
+                            let message = 'Locatie niet beschikbaar. Vul handmatig een adres in of probeer opnieuw.';
+                            switch (error.code) {
+                                case 1:
+                                    message = 'Locatie delen is geweigerd. Sta toegang toe in je browserinstellingen of zoek handmatig.';
+                                    break;
+                                case 2:
+                                    message = 'Locatie kan niet worden bepaald. Controleer je verbinding of probeer opnieuw.';
+                                    break;
+                                case 3:
+                                    message = 'Locatiebepaling duurde te lang. Probeer het opnieuw of vul handmatig een adres in.';
+                                    break;
+                            }
+                            setStatus(message, true);
+                        },
+                        { enableHighAccuracy: true, timeout: 10000 }
+                    );
+                });
+            }
+
+            loadAeds();
+        })();
+    </script>
+}
